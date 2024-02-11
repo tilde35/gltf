@@ -44,12 +44,16 @@ pub enum ReadColors<'a> {
     RgbU8(Iter<'a, [u8; 3]>),
     /// RGB vertex color of type `[u16; 3]>`.
     RgbU16(Iter<'a, [u16; 3]>),
+    /// RGB vertex color of type `[i16; 3]>`.
+    RgbI16(Iter<'a, [i16; 3]>),
     /// RGB vertex color of type `[f32; 3]`.
     RgbF32(Iter<'a, [f32; 3]>),
     /// RGBA vertex color of type `[u8; 4]>`.
     RgbaU8(Iter<'a, [u8; 4]>),
     /// RGBA vertex color of type `[u16; 4]>`.
     RgbaU16(Iter<'a, [u16; 4]>),
+    /// RGBA vertex color of type `[u16; 4]>`.
+    RgbaI16(Iter<'a, [i16; 4]>),
     /// RGBA vertex color of type `[f32; 4]`.
     RgbaF32(Iter<'a, [f32; 4]>),
 }
@@ -110,6 +114,71 @@ where
     pub(crate) reader: mesh::Reader<'a, 's, F>,
 }
 
+/// Individual morph target
+pub struct ReadMorphTarget<'a, 's, F>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    morph_target: mesh::MorphTarget<'a>,
+    reader: mesh::Reader<'a, 's, F>,
+}
+impl<'a, 's, F> ReadMorphTarget<'a, 's, F>
+where
+    F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
+{
+    /// Visits the vertex positions of a morph target.
+    pub fn read_positions(&self) -> Option<ReadPositions<'s>> {
+        self.morph_target
+            .positions()
+            .clone()
+            .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()))
+    }
+
+    /// Visits the vertex normals of a morph target.
+    pub fn read_normals(&self) -> Option<ReadNormals<'s>> {
+        self.morph_target
+            .normals()
+            .clone()
+            .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()))
+    }
+
+    /// Visits the vertex tangents of a morph target.
+    pub fn read_tangents(&self) -> Option<ReadTangents<'s>> {
+        self.morph_target
+            .tangents()
+            .clone()
+            .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()))
+    }
+
+    /// Visits the vertex colors of a primitive.
+    pub fn read_colors(&self, set: u32) -> Option<ReadColors<'s>> {
+        use crate::accessor;
+        use crate::accessor::DataType::{F32, I16, U16, U8};
+        use crate::accessor::Dimensions::{Vec3, Vec4};
+        self.morph_target.colors(set).and_then(|accessor| {
+            match (accessor.data_type(), accessor.dimensions()) {
+                (U8, Vec3) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbU8),
+                (U16, Vec3) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbU16),
+                (I16, Vec3) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbI16),
+                (F32, Vec3) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbF32),
+                (U8, Vec4) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbaU8),
+                (U16, Vec4) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbaU16),
+                (I16, Vec4) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbaI16),
+                (F32, Vec4) => accessor::Iter::new(accessor, self.reader.get_buffer_data.clone())
+                    .map(ReadColors::RgbaF32),
+                _ => unreachable!(),
+            }
+        })
+    }
+}
+
 impl<'a, 's, F> ExactSizeIterator for ReadMorphTargets<'a, 's, F> where
     F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>
 {
@@ -119,28 +188,16 @@ impl<'a, 's, F> Iterator for ReadMorphTargets<'a, 's, F>
 where
     F: Clone + Fn(Buffer<'a>) -> Option<&'s [u8]>,
 {
-    type Item = (
-        Option<ReadPositionDisplacements<'s>>,
-        Option<ReadNormalDisplacements<'s>>,
-        Option<ReadTangentDisplacements<'s>>,
-    );
+    type Item = ReadMorphTarget<'a, 's, F>;
     fn next(&mut self) -> Option<Self::Item> {
         self.index += 1;
         self.reader
             .primitive
             .morph_targets()
             .nth(self.index - 1)
-            .map(|morph_target| {
-                let positions = morph_target
-                    .positions()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                let normals = morph_target
-                    .normals()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                let tangents = morph_target
-                    .tangents()
-                    .and_then(|accessor| Iter::new(accessor, self.reader.get_buffer_data.clone()));
-                (positions, normals, tangents)
+            .map(|morph_target| ReadMorphTarget {
+                morph_target,
+                reader: self.reader.clone(),
             })
     }
 
@@ -162,6 +219,12 @@ impl<'a> ReadColors<'a> {
         self::colors::CastingIter::new(self)
     }
 
+    /// Reinterpret colors as RGB u16, discarding alpha, if present.  Lossy if
+    /// the underlying iterator yields f32 or any RGBA.
+    pub fn into_rgb_i16(self) -> self::colors::CastingIter<'a, self::colors::RgbI16> {
+        self::colors::CastingIter::new(self)
+    }
+
     /// Reinterpret colors as RGB f32, discarding alpha, if present.  Lossy if
     /// the underlying iterator yields u16 or any RGBA.
     pub fn into_rgb_f32(self) -> self::colors::CastingIter<'a, self::colors::RgbF32> {
@@ -177,6 +240,12 @@ impl<'a> ReadColors<'a> {
     /// Reinterpret colors as RGBA u16, with default alpha 65535.  Lossy if the
     /// underlying iterator yields f32.
     pub fn into_rgba_u16(self) -> self::colors::CastingIter<'a, self::colors::RgbaU16> {
+        self::colors::CastingIter::new(self)
+    }
+
+    /// Reinterpret colors as RGBA u16, with default alpha 65535.  Lossy if the
+    /// underlying iterator yields f32.
+    pub fn into_rgba_i16(self) -> self::colors::CastingIter<'a, self::colors::RgbaI16> {
         self::colors::CastingIter::new(self)
     }
 

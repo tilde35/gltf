@@ -98,14 +98,11 @@ pub struct Mesh<'a> {
 /// A single morph target for a mesh primitive.
 #[derive(Clone, Debug)]
 pub struct MorphTarget<'a> {
-    /// XYZ vertex position displacements.
-    positions: Option<Accessor<'a>>,
+    /// JSON document
+    document: &'a Document,
 
-    /// XYZ vertex normal displacements.
-    normals: Option<Accessor<'a>>,
-
-    /// XYZ vertex tangent displacements.
-    tangents: Option<Accessor<'a>>,
+    /// Morph target attributes
+    json: &'a json::mesh::MorphTarget,
 }
 
 /// Geometry to be rendered with the given material.
@@ -461,16 +458,29 @@ where
 impl<'a> MorphTarget<'a> {
     /// Returns the XYZ vertex position displacements.
     pub fn positions(&self) -> Option<Accessor<'a>> {
-        self.positions.clone()
+        self.json
+            .get(&Checked::Valid(Semantic::Positions))
+            .and_then(|index| self.document.accessors().nth(index.value()))
     }
 
     /// Returns the XYZ vertex normal displacements.
     pub fn normals(&self) -> Option<Accessor<'a>> {
-        self.normals.clone()
+        self.json
+            .get(&Checked::Valid(Semantic::Normals))
+            .and_then(|index| self.document.accessors().nth(index.value()))
     }
 
     /// Returns the XYZ vertex tangent displacements.
     pub fn tangents(&self) -> Option<Accessor<'a>> {
-        self.tangents.clone()
+        self.json
+            .get(&Checked::Valid(Semantic::Tangents))
+            .and_then(|index| self.document.accessors().nth(index.value()))
+    }
+
+    /// Returns the vertex colors.
+    pub fn colors(&self, set: u32) -> Option<Accessor<'a>> {
+        self.json
+            .get(&Checked::Valid(Semantic::Colors(set)))
+            .and_then(|index| self.document.accessors().nth(index.value()))
     }
 }

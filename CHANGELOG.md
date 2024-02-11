@@ -12,6 +12,7 @@ The `gltf` crate adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix `attemt to to subtract with overflow`-panic in `size_hint()` of sparse accessor when collecting items.
 - Fix incorrect values returned from `size_hint()` in sparse accessor
 - Add support to read items from sparse accessor without base buffer view
+- Added support for colors in morph targets
 
 ## [1.4.0] - 2023-12-17
 

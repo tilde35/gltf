@@ -16,6 +16,10 @@ pub struct RgbU8;
 #[derive(Clone, Debug)]
 pub struct RgbU16;
 
+/// Type which describes how to cast any color into RGB u16.
+#[derive(Clone, Debug)]
+pub struct RgbI16;
+
 /// Type which describes how to cast any color into RGB f32.
 #[derive(Clone, Debug)]
 pub struct RgbF32;
@@ -27,6 +31,10 @@ pub struct RgbaU8;
 /// Type which describes how to cast any color into RGBA u16.
 #[derive(Clone, Debug)]
 pub struct RgbaU16;
+
+/// Type which describes how to cast any color into RGBA u16.
+#[derive(Clone, Debug)]
+pub struct RgbaI16;
 
 /// Type which describes how to cast any color into RGBA f32.
 #[derive(Clone, Debug)]
@@ -45,6 +53,12 @@ impl ColorChannel for u8 {
 impl ColorChannel for u16 {
     fn max_color() -> Self {
         u16::max_value()
+    }
+}
+
+impl ColorChannel for i16 {
+    fn max_color() -> Self {
+        i16::max_value()
     }
 }
 
@@ -88,6 +102,9 @@ pub trait Cast {
     /// Cast from RGB u16.
     fn cast_rgb_u16(x: [u16; 3]) -> Self::Output;
 
+    /// Cast from RGB i16.
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output;
+
     /// Cast from RGB f32.
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output;
 
@@ -96,6 +113,9 @@ pub trait Cast {
 
     /// Cast from RGBA u16.
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output;
+
+    /// Cast from RGBA i16.
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output;
 
     /// Cast from RGBA f32.
     fn cast_rgba_f32(x: [f32; 4]) -> Self::Output;
@@ -121,9 +141,11 @@ impl<'a, A: Cast> Iterator for CastingIter<'a, A> {
         match self.0 {
             ReadColors::RgbU8(ref mut i) => i.next().map(A::cast_rgb_u8),
             ReadColors::RgbU16(ref mut i) => i.next().map(A::cast_rgb_u16),
+            ReadColors::RgbI16(ref mut i) => i.next().map(A::cast_rgb_i16),
             ReadColors::RgbF32(ref mut i) => i.next().map(A::cast_rgb_f32),
             ReadColors::RgbaU8(ref mut i) => i.next().map(A::cast_rgba_u8),
             ReadColors::RgbaU16(ref mut i) => i.next().map(A::cast_rgba_u16),
+            ReadColors::RgbaI16(ref mut i) => i.next().map(A::cast_rgba_i16),
             ReadColors::RgbaF32(ref mut i) => i.next().map(A::cast_rgba_f32),
         }
     }
@@ -133,9 +155,11 @@ impl<'a, A: Cast> Iterator for CastingIter<'a, A> {
         match self.0 {
             ReadColors::RgbU8(ref mut i) => i.nth(x).map(A::cast_rgb_u8),
             ReadColors::RgbU16(ref mut i) => i.nth(x).map(A::cast_rgb_u16),
+            ReadColors::RgbI16(ref mut i) => i.nth(x).map(A::cast_rgb_i16),
             ReadColors::RgbF32(ref mut i) => i.nth(x).map(A::cast_rgb_f32),
             ReadColors::RgbaU8(ref mut i) => i.nth(x).map(A::cast_rgba_u8),
             ReadColors::RgbaU16(ref mut i) => i.nth(x).map(A::cast_rgba_u16),
+            ReadColors::RgbaI16(ref mut i) => i.nth(x).map(A::cast_rgba_i16),
             ReadColors::RgbaF32(ref mut i) => i.nth(x).map(A::cast_rgba_f32),
         }
     }
@@ -144,9 +168,11 @@ impl<'a, A: Cast> Iterator for CastingIter<'a, A> {
         match self.0 {
             ReadColors::RgbU8(i) => i.last().map(A::cast_rgb_u8),
             ReadColors::RgbU16(i) => i.last().map(A::cast_rgb_u16),
+            ReadColors::RgbI16(i) => i.last().map(A::cast_rgb_i16),
             ReadColors::RgbF32(i) => i.last().map(A::cast_rgb_f32),
             ReadColors::RgbaU8(i) => i.last().map(A::cast_rgba_u8),
             ReadColors::RgbaU16(i) => i.last().map(A::cast_rgba_u16),
+            ReadColors::RgbaI16(i) => i.last().map(A::cast_rgba_i16),
             ReadColors::RgbaF32(i) => i.last().map(A::cast_rgba_f32),
         }
     }
@@ -160,9 +186,11 @@ impl<'a, A: Cast> Iterator for CastingIter<'a, A> {
         match self.0 {
             ReadColors::RgbU8(ref i) => i.size_hint(),
             ReadColors::RgbU16(ref i) => i.size_hint(),
+            ReadColors::RgbI16(ref i) => i.size_hint(),
             ReadColors::RgbF32(ref i) => i.size_hint(),
             ReadColors::RgbaU8(ref i) => i.size_hint(),
             ReadColors::RgbaU16(ref i) => i.size_hint(),
+            ReadColors::RgbaI16(ref i) => i.size_hint(),
             ReadColors::RgbaF32(ref i) => i.size_hint(),
         }
     }
@@ -179,6 +207,10 @@ impl Cast for RgbU8 {
         x.into_rgb().normalize()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.into_rgb().normalize()
     }
@@ -188,6 +220,10 @@ impl Cast for RgbU8 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.into_rgb().normalize()
     }
 
@@ -207,6 +243,10 @@ impl Cast for RgbU16 {
         x.into_rgb().normalize()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.into_rgb().normalize()
     }
@@ -216,6 +256,46 @@ impl Cast for RgbU16 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_f32(x: [f32; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+}
+
+impl Cast for RgbI16 {
+    type Output = [i16; 3];
+
+    fn cast_rgb_u8(x: [u8; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgb_u16(x: [u16; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_u8(x: [u8; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.into_rgb().normalize()
     }
 
@@ -235,6 +315,10 @@ impl Cast for RgbF32 {
         x.into_rgb().normalize()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.into_rgb().normalize()
     }
@@ -244,6 +328,10 @@ impl Cast for RgbF32 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.into_rgb().normalize()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.into_rgb().normalize()
     }
 
@@ -263,6 +351,10 @@ impl Cast for RgbaU8 {
         x.normalize().into_rgba()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.normalize().into_rgba()
     }
@@ -272,6 +364,10 @@ impl Cast for RgbaU8 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.normalize().into_rgba()
     }
 
@@ -291,6 +387,10 @@ impl Cast for RgbaU16 {
         x.normalize().into_rgba()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.normalize().into_rgba()
     }
@@ -300,6 +400,46 @@ impl Cast for RgbaU16 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_f32(x: [f32; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+}
+
+impl Cast for RgbaI16 {
+    type Output = [i16; 4];
+
+    fn cast_rgb_u8(x: [u8; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgb_u16(x: [u16; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_u8(x: [u8; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.normalize().into_rgba()
     }
 
@@ -319,6 +459,10 @@ impl Cast for RgbaF32 {
         x.normalize().into_rgba()
     }
 
+    fn cast_rgb_i16(x: [i16; 3]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
     fn cast_rgb_f32(x: [f32; 3]) -> Self::Output {
         x.normalize().into_rgba()
     }
@@ -328,6 +472,10 @@ impl Cast for RgbaF32 {
     }
 
     fn cast_rgba_u16(x: [u16; 4]) -> Self::Output {
+        x.normalize().into_rgba()
+    }
+
+    fn cast_rgba_i16(x: [i16; 4]) -> Self::Output {
         x.normalize().into_rgba()
     }
 
